@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boss — Vida e Ataques (Ás a K)</title>
+  <style>
+    :root{--bg:#0b0b12;--card:#0f1116;--accent:#f6b034;--muted:#9aa0a6}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:linear-gradient(180deg,#07070a 0%, #0f1020 100%);color:#e6e9ee;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px}
+    .wrap{width:100%;max-width:700px;display:flex:flex-direction:column;gap:16px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 4px 16px rgba(2,6,23,.6)}
+    header h1{margin:0;font-size:18px}
+    .portrait{width:100%;height:200px;background:#060608;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .portrait img{width:1080px;height:720px;object-fit:fill;object-position:top}
+    .bio{margin-top:8px;font-size:12px;line-height:1.4;color:var(--muted)}
+    .hp-wrap{margin-top:12px}
+    .hp-bar{width:100%;height:18px;background:#1a1b20;border-radius:999px;overflow:hidden;position:relative}
+    .hp-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff7a00);width:100%;transition:width .5s ease}
+    .hp-meta{display:flex;justify-content:space-between;font-size:11px;margin-top:6px;color:var(--muted)}
+    .controls{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+    button{background:#16161a;border:1px solid rgba(255,255,255,.03);padding:6px 8px;border-radius:6px;color:#e9ecef;cursor:pointer;font-size:12px}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,.06)}
+    
+    /* Estilos para as cartas flip */
+    .attacks-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:8px}
+    .flip-card{position:relative;width:100%;height:160px;perspective:1000px;cursor:pointer}
+    .flip-card-inner{position:absolute;width:100%;height:100%;transition:transform 0.6s;transform-style:preserve-3d;box-shadow:0 4px 8px rgba(0,0,0,0.2);border-radius:8px;overflow:hidden}
+    .flip-card.flipped .flip-card-inner{transform:rotateY(180deg)}
+    .flip-card-front, .flip-card-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px;text-align:center;border:1px solid rgba(255,255,255,.03)}
+    .flip-card-front{background:linear-gradient(180deg,#1a1b20,#0f1116)}
+    .flip-card-back{transform:rotateY(180deg);background:url('./BOSS1/imagens/carta.png') no-repeat center/cover; color:#000; padding:4px;}
+    .attack h3{margin:0;font-size:13px}
+    .attack p{margin:4px 0 0;font-size:11px;color:var(--muted);line-height:1.3}
+    .attack .meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;width:100%;font-size:11px}
+    .damage{font-weight:700;color:var(--accent)}
+    .roll{background:rgba(255,255,255,.02);padding:4px;border-radius:4px;font-weight:700;font-size:11px}
+
+    main{display:flex:flex-direction:column}
+    .big-center{display:flex:flex-direction:column;align-items:center;gap:8px}
+    .glow-dice{width:100px;height:100px;border-radius:10px;background:linear-gradient(180deg,#0f0f15,#0b0b12);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(246,176,52,.06),0 0 30px rgba(246,176,52,.06) inset}
+    .glow-dice img{width:60px;}
+    footer{margin-top:12px;color:var(--muted);font-size:11px;text-align:center}
+    @media (max-width:600px){.portrait{height:150px}.attacks-grid{grid-template-columns:repeat(auto-fit, minmax(100px, 1fr))}.flip-card{height:140px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="card">
+      <header>
+        <h1>O Boss — Mago das Sombras</h1>
+      </header>
+      <div class="portrait" title="Imagem do Boss">
+        <img src="Mago nas Sombras e Runas Glowing.png" alt="Boss portrait"/>
+      </div>
+      <div class="bio">
+        <strong>História curta</strong>
+        <p>Antigo estudioso das artes arcanas proibidas, o Mago das Sombras atravessou eras coletando segredos que corroem a alma. Calmo, frio e estrategista, com runas incandescentes que marcam seu pacto com forças ancestrais.</p>
+      </div>
+      <div class="hp-wrap">
+        <label style="display:block;margin-top:6px;font-weight:700;font-size:12px">Vida do Boss</label>
+        <div class="hp-bar" aria-hidden>
+          <div class="hp-fill" id="hpFill" style="width:100%"></div>
+        </div>
+        <div class="hp-meta"><span id="hpText">100 / 100 HP</span><span id="hpPercent">100%</span></div>
+        <div class="controls">
+          <button onclick="modifyHP(-5)">-5</button>
+          <button onclick="modifyHP(-10)">-10</button>
+          <button onclick="modifyHP(-25)">-25</button>
+          <button onclick="modifyHP(5)">+5</button>
+          <button onclick="modifyHP(10)">+10</button>
+          <button onclick="modifyHP(25)">+25</button>
+          <button onclick="restoreFull()" class="secondary">Curar Completo</button>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <label style="display:block;margin-bottom:4px;font-weight:700;font-size:12px">Ajustar vida máxima</label>
+        <input id="maxHpInput" type="number" value="100" style="width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,.03);background:transparent;color:inherit;font-size:12px" />
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="setMaxHP()">Aplicar</button>
+          <button onclick="resetMaxHP()" class="secondary">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="card">
+      <section class="big-center">
+        <div class="glow-dice">
+          <img src="Mago nas Sombras e Runas Glowing.png" alt="dice glow" style="width:60px;opacity:.95;filter:grayscale(.05) contrast(1.02)"/>
+        </div>
+        <div style="text-align:center">
+          <h2 style="margin:0;font-size:16px">Ataques nomeados — Ás (A) até Rei (K)</h2>
+          <p style="margin:4px 0 0;color:var(--muted);font-size:12px">Cada ataque é uma carta. Clique para virar e ver a descrição. Clique novamente para voltar. Use o botão para causar dano (modo demo).</p>
+        </div>
+      </section>
+
+      <section style="margin-top:12px">
+        <div class="attacks-grid" id="attacksGrid">
+          <!-- Ataques serão inseridos por JS -->
+        </div>
+      </section>
+
+      <footer>
+        <small>Designer: gerado automaticamente. Clique em uma carta para virar e ver detalhes. Se quiser nomes/descrições diferentes, posso alterar.</small>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // Configuração dos ataques de Ás (A) até Rei (K)
+    const attacks = [
+      {rank:'Ás (A)', desc:'8 de dano em 3 alvos'},
+      {rank:'2', desc:'8 de dano em 3 alvos'},
+      {rank:'3', desc:'14 de dano em 6 alvos e +1 (o grupo escolhe qual dos 2 lados)'},
+      {rank:'4', desc:'8 de dano em 3 alvos'},
+      {rank:'5', desc:'8 de dano em 3 alvos'},
+      {rank:'6', desc:'11 de dano em 3 alvos'},
+      {rank:'7', desc:'11 de dano em 3 alvos'},
+      {rank:'8', desc:'0 de dano'},
+      {rank:'9', desc:'0 de dano'},
+      {rank:'10', desc:'8 de dano em 3 alvos'},
+      {rank:'Valete (J)', desc:'Telefone sem fio'},
+      {rank:'Dama (Q)', desc:'Uma mimica'},
+      {rank:'Rei (K)', desc:'Mestre mandou'}
+    ];
+
+    const attacksGrid = document.getElementById('attacksGrid');
+    const hpFill = document.getElementById('hpFill');
+    const hpText = document.getElementById('hpText');
+    const hpPercent = document.getElementById('hpPercent');
+    const maxHpInput = document.getElementById('maxHpInput');
+
+    let maxHP = 100;
+    let currHP = maxHP;
+
+    function renderAttacks(){
+      attacksGrid.innerHTML = '';
+      attacks.forEach((a, idx)=>{
+        const el = document.createElement('div');
+        el.className = 'flip-card';
+        el.innerHTML = `
+          <div class="flip-card-inner">
+            <div class="flip-card-front attack">
+              <h3>${a.rank}</h3>
+              <p>${a.desc}</p> <!-- Especificação na frente -->
+            </div>
+            <div class="flip-card-back attack">
+              <h3>${a.rank}</h3>
+              <div class="meta"><button onclick="useAttack(${idx}, event)">Usar</button></div>
+            </div>
+          </div>`;
+        el.addEventListener('click', (e) => {
+          if (!e.target.closest('button')) {
+            el.classList.toggle('flipped');
+          }
+        });
+        attacksGrid.appendChild(el);
+      })
+    }
+
+    function updateHPUI(){
+      const pct = Math.max(0, Math.min(100, Math.round((currHP/maxHP)*100)));
+      hpFill.style.width = pct + '%';
+      hpText.textContent = Math.max(0, Math.round(currHP)) + ' / ' + maxHP + ' HP';
+      hpPercent.textContent = pct + '%';
+    }
+
+    function useAttack(i, e){
+      e.stopPropagation();
+      const a = attacks[i];
+      let totalDamage = 0;
+      switch (a.rank) {
+        case 'Ás (A)':
+        case '2':
+        case '4':
+        case '5':
+        case '10':
+          totalDamage = 8;
+          break;
+        case '3':
+          totalDamage = 14;
+          break;
+        case '6':
+        case '7':
+          totalDamage = 11;
+          break;
+        case '8':
+        case '9':
+        case 'Valete (J)':
+        case 'Dama (Q)':
+        case 'Rei (K)':
+          totalDamage = 0;
+          break;
+      }
+      const roll = Math.floor(Math.random()*20)+1;
+      if(roll===20){ totalDamage = Math.round(totalDamage * 1.6); alert(`Crítico! Rolagem ${roll} -> ${totalDamage} de dano`); }
+      else if(roll===1){ totalDamage = 0; alert(`Falha! Rolagem ${roll} -> nenhum dano`); }
+
+      currHP -= totalDamage;
+      if(currHP<0) currHP = 0;
+      updateHPUI();
+    }
+
+    function modifyHP(v){ currHP = Math.max(0, Math.min(maxHP, currHP + v)); updateHPUI(); }
+    function restoreFull(){ currHP = maxHP; updateHPUI(); }
+    function setMaxHP(){ const v = Number(maxHpInput.value) || 100; maxHP = Math.max(1, v); if(currHP>maxHP) currHP = maxHP; updateHPUI(); }
+    function resetMaxHP(){ maxHpInput.value=100; maxHP=100; currHP=100; updateHPUI(); }
+
+    // Inicializa
+    renderAttacks();
+    updateHPUI();
+  </script>
+</body>
+</html>
